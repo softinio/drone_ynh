@@ -1,35 +1,41 @@
 #!/bin/bash
 
-source ./_common.sh
+#=================================================
+# GENERIC START
+#=================================================
+
+# IMPORT GENERIC HELPERS
 source /usr/share/yunohost/helpers
 
-# Set app specific variables
-app=$APPNAME
-DESTDIR="/opt/$app"
+# Load common variables and helpers
+source ./_common.sh
+
+#=================================================
+# STANDARD REMOVE
+#=================================================
 
 # Stop & remove Drone
-sudo docker stop "$app"
-sudo docker rm "$app"
-sudo docker rmi "$DRONE_IMAGE"
+systemctl stop "$app".service || docker stop $app
+docker rm "$app"
+docker rmi "$DRONE_IMAGE"
 
-sudo systemctl stop "$app".service
+# Drop MySQL database and user
+ynh_mysql_drop_db "$dbname" 2>/dev/null
+ynh_mysql_drop_user "$dbuser" 2>/dev/null
 
 # Retrieve domain from app settings
 domain=$(ynh_app_setting_get "$app" domain)
 
 # Delete app directory and configurations
-sudo rm -rf "/opt/${app}"
-[[ -n $domain ]] && sudo rm -f "/etc/nginx/conf.d/${domain}.d/${app}.conf"
-
-sudo rm -rf "$DESTDIR"
+ynh_secure_remove "$final_path"
 
 # Remove init script
-sudo systemctl disable "$app".service
-sudo rm -f /etc/systemd/system/"$app".service
-sudo systemctl daemon-reload
+ynh_remove_systemd_config
+
+ # Remove nginx config
+ynh_remove_nginx_config
 
 # Remove monitor
-sudo yunohost service remove "$app"
+yunohost service remove "$app"
 
-# Reload services
-sudo systemctl reload nginx.service || true
+true # Do not fail if remove after install error

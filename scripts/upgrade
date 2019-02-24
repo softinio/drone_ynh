@@ -1,3 +1,60 @@
 #!/bin/bash
 
-# TODO when Drone 0.5 gets out
+#=================================================
+# GENERIC START
+#=================================================
+
+# IMPORT GENERIC HELPERS
+source /usr/share/yunohost/helpers
+
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+# Load common variables and helpers
+source ./_common.sh
+
+domain=$(ynh_app_setting_get "$app" domain)
+admin=$(ynh_app_setting_get "$app" adminusername)
+dbpass=$(ynh_app_setting_get "$app" mysqlpwd)
+port=$(ynh_app_setting_get "$app" web_port)
+is_public=$(ynh_app_setting_get "$app" is_public)
+
+# Backup the current version of the app
+ynh_backup_before_upgrade
+ynh_clean_setup () {
+    ynh_restore_upgradebackup
+}
+
+# Stop service
+systemctl stop "$app".service
+
+#=================================================
+# MIGRATION FROM OLD VERSION
+#=================================================
+
+#=================================================
+# STANDARD UPGRADE STEPS
+#=================================================
+
+# Remove container
+docker rm $app
+
+# Create new container
+create_container
+
+# Configure init script
+ynh_add_systemd_config
+
+# Modify Nginx configuration file and copy it to Nginx conf directory
+config_nginx
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+
+# Unprotect root from SSO if public
+set_access_settings
+
+# Reload services
+systemctl reload nginx.service || true
+systemctl restart "$app".service || true

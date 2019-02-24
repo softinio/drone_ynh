@@ -1,84 +1,113 @@
 #!/bin/bash
 
-set -eu
+#=================================================
+# GENERIC START
+#=================================================
 
-source ./_common.sh
+# IMPORT GENERIC HELPERS
 source /usr/share/yunohost/helpers
 
-# Set app specific variables
-app=$APPNAME
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+# Load common variables and helpers
+source ./_common.sh
 
 # Retrieve arguments
-domain=$1
-remote_driver=$2
-remote_config=$3
-is_public=$4
+domain=$YNH_APP_ARG_DOMAIN
+remote_gogs=$YNH_APP_ARG_REMOTE_GOGS
+remote_gitea=$YNH_APP_ARG_REMOTE_GITEA
+remote_github=$YNH_APP_ARG_REMOTE_GITHUB
+remote_gitlab=$YNH_APP_ARG_REMOTE_GITLAB
+client_id=$YNH_APP_ARG_CLIENT_ID
+client_secret=$YNH_APP_ARG_CLIENT_SECRET
+path_url="/"
+admin=$YNH_APP_ARG_ADMIN
+is_public=$YNH_APP_ARG_IS_PUBLIC
 
-sudo yunohost app checkurl "${domain}" -a "$app" \
-  || ynh_die "The path ${domain} is not available for app installation."
+# Check parameters
+ynh_webpath_available $domain $path_url || ynh_die "The path ${domain} is not available for app installation."
+ynh_webpath_register "$app" "${domain}" "$path_url"
 
-# Check port availability
-sudo yunohost app checkport 8112 || ynh_die "Port 8112 already used, aborting."
+remote=0
+[[ ! -z $remote_gitea  ]] && remote=$((remote + 1))
+[[ ! -z $remote_gogs ]] && remote=$((remote + 1))
+[[ ! -z $remote_github ]] && remote=$((remote + 1))
+[[ ! -z $remote_gitlab ]] && remote=$((remote + 1))
+[[ $remote != 1 ]] && ynh_die "You can give only one remote driver. You can install multiple instance."
 
-# Check data directory
-[ -d $DATADIR ] && ynh_die \
-"The data directory '$DATADIR' already exists.\
- You should safely delete it before installing this app."
+if [[ ! -z $remote_gitlab || ! -z $remote_github ]]; then
+    [[ -z $client_id || -z $client_secret ]] && ynh_die "For Gitlab or Github you need client id and client secret."
+fi
 
-# Install the Drone configuration file
-sudo mkdir -p "$DATADIR"/data
-cat << EOF | sudo tee -a "$DATADIR"/dronerc
-REMOTE_DRIVER=$remote_driver
-REMOTE_CONFIG=$remote_config
-DATABASE_DRIVER=sqlite3
-DATABASE_CONFIG=/var/lib/drone/drone.sqlite
-EOF
+# Check user parameter
+ynh_user_exists "$admin" \
+|| ynh_die "The chosen admin user does not exist."
+
+# Generate random password and key
+dbpass=$(ynh_string_random)
+
+# Choose port
+port=$(ynh_find_port 1480)
+
+# Store Settings
+ynh_app_setting_set $app domain $domain
+ynh_app_setting_set $app mysqlpwd $dbpass
+ynh_app_setting_set $app adminusername $admin
+ynh_app_setting_set $app is_public $is_public
+ynh_app_setting_set $app web_port $port
+
+#=================================================
+# INSTALL DEPENDENCIES
+#=================================================
 
 # Install and setup Docker
 if [ ! -f /usr/bin/docker ]; then
     echo "Installing Docker"
-    # docker.io is in jessie-backports
-    grep -q -R 'jessie-backports' /etc/apt/sources.list{,.d} || {
-        echo "deb http://httpredir.debian.org/debian jessie-backports main" \
-            | sudo tee -a /etc/apt/sources.list.d/backports.list >/dev/null
-    }
-
-    sudo apt-get update
-    sudo apt-get install docker.io -y
-
-    sudo usermod -aG docker admin
-
-    sudo yunohost service add docker
-
-    sudo systemctl enable docker
-    sudo systemctl restart docker
+    ynh_install_app_dependencies curl apt-transport-https ca-certificates software-properties-common
+  	curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
+    add-apt-repository \
+     "deb [arch=$DOCKER_ARCH] https://download.docker.com/linux/debian \
+     $(lsb_release -cs) \
+     stable"
+    ynh_install_app_dependencies docker-ce
+    yunohost service add docker
+  	update-rc.d docker defaults
+    systemctl enable docker
+  	systemctl start docker
 fi
 
-# Install Drone
-sudo docker pull $DRONE_IMAGE
-sudo docker run \
-        --volume $DATADIR/data:/var/lib/drone \
-        --volume /var/run/docker.sock:/var/run/docker.sock \
-        --env-file $DATADIR/dronerc \
-        --restart=always \
-        --publish=8112:8000 \
-        --detach=true \
-        --name=drone \
-        $DRONE_IMAGE
+#=================================================
+# STANDARD MODIFICATIONS
+#=================================================
 
-sudo cp ../conf/drone.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo yunohost service add $app
+# Initialize database and store mysql password for upgrade
+ynh_mysql_create_db "$dbname" "$dbuser" "$dbpass"
 
-ynh_app_setting_set $app is_public $is_public
+# Create needed directories
+create_dir
 
-# Copy it to Nginx conf directory
-sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
+# Install drone
+create_drone_env
+create_container
 
-if [ "$is_public" = "Yes" ]; then
-    sudo yunohost app setting $app skipped_uris -v "/"
-fi
+# Configure init script
+ynh_replace_string "__APP__" "$app" ../conf/systemd.service
+ynh_add_systemd_config
+
+# Modify Nginx configuration file and copy it to Nginx conf directory
+config_nginx
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+
+# Unprotect root from SSO if public
+set_access_settings
+
+# Add drone to Yunohost
+yunohost service add $app
 
 # Reload services
-sudo systemctl reload nginx.service || true
-sudo systemctl restart "$app".service || true
+systemctl reload nginx.service || true
+systemctl restart "$app".service || true

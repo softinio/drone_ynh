@@ -1,64 +1,119 @@
 {
-	"package_format": 1,
-	"name": "Drone",
-	"id": "drone",
-	"packaging_format": 1,
-	"description": {
-		"en": "A continuous delivery platform built on Docker, written in Go",
-		"fr": "Une plateforme d'intégration continuebasée sur Docker, écrite en  Go"
-	},
-	"url": "http://try.drone.io",
-	"license": "MIT",
-	"version": "0.4",
-	"maintainer": {
-		"name": "NicolasPetton",
-		"email": "nicolas@petton.fr"
-	},
-	"multi_instance": false,
-	"services": [
-		"nginx"
-	],
-	"requirements": {
-		"yunohost": ">= 2.4.0"
-	},
-	"arguments": {
-		"install" : [
-			{
-				"name": "domain",
-				"type": "domain",
-				"ask": {
-					"en": "Choose a domain for Drone (Drone will be installed at the root of the domain!)",
-					"fr": "Choisissez un domaine pour Drone (Drone sera installé à la racine du domaine!)"
-				},
-				"example": "domain.org"
-			},
-			{
-				"name": "remote_driver",
-				"ask": {
-					"en": "Choose a remote driver",
-					"fr": "Choisissez un pilote distant"
-				},
-				"example": "gogs",
-				"default": "gogs"
-			},
-			{
-				"name": "remote_config",
-				"ask": {
-					"en": "Choose a remote config",
-					"fr": "Choisissez une configuration distante"
-				},
-				"example": "https://example.fr/gogs?open=false",
-				"default": "https://example.fr/gogs?open=false"
-			},
-			{
-				"name": "public_site",
-				"ask": {
-					"en": "Is it a public site ?",
-					"fr": "Est-ce un site public ?"
-				},
-				"choices": ["Yes", "No"],
-				"default": "Yes"
-			}
-		]
-	}
+  "package_format": 1,
+  "name": "Drone",
+  "id": "drone",
+  "packaging_format": 1,
+  "description": {
+    "en": "A continuous delivery platform built on Docker, written in Go",
+    "fr": "Une plateforme d'intégration continuebasée sur Docker, écrite en  Go"
+  },
+  "url": "http://try.drone.io",
+  "license": "MIT",
+  "version": "1.0.0-rc.5~ynh1",
+  "maintainer": {
+    "name": "NicolasPetton",
+    "email": "nicolas@petton.fr"
+  },
+  "multi_instance": true,
+  "services": [
+    "nginx",
+    "mysql"
+  ],
+  "requirements": {
+    "yunohost": ">= 2.4.0"
+  },
+  "arguments": {
+    "install": [{
+        "name": "domain",
+        "type": "domain",
+        "ask": {
+          "en": "Choose a domain for Drone (Drone will be installed at the root of the domain!)",
+          "fr": "Choisissez un domaine pour Drone (Drone sera installé à la racine du domaine!)"
+        },
+        "example": "domain.org"
+      },
+      {
+        "name": "remote_gogs",
+        "type": "string",
+        "ask": {
+          "en": "Give gogs url",
+          "fr": "Donnez l'url de gogs"
+        },
+        "optional": true,
+        "example": "https://example.fr/gogs",
+        "default": ""
+      },
+      {
+        "name": "remote_gitea",
+        "type": "string",
+        "ask": {
+          "en": "Give gitea url",
+          "fr": "Donnez l'url de gitea"
+        },
+        "optional": true,
+        "example": "https://example.fr/gitea",
+        "default": ""
+      },
+      {
+        "name": "remote_github",
+        "type": "string",
+        "ask": {
+          "en": "Give Github url",
+          "fr": "Donnez l'url de Github"
+        },
+        "optional": true,
+        "example": "https://github.com",
+        "default": ""
+      },
+      {
+        "name": "remote_gitlab",
+        "type": "string",
+        "ask": {
+          "en": "Give Gitlab url",
+          "fr": "Donnez l'url de Gitlab"
+        },
+        "optional": true,
+        "example": "https://gitlab.com",
+        "default": ""
+      },
+      {
+        "name": "client_id",
+        "type": "string",
+        "ask": {
+          "en": "Give your client id (for Github and Gitlab)",
+          "fr": "Donnez votre client id (pour Github et Gitlab)"
+        },
+        "optional": true,
+        "default": ""
+      },
+      {
+        "name": "client_secret",
+        "type": "string",
+        "ask": {
+          "en": "Give your client secret (for Github and Gitlab)",
+          "fr": "Donnez votre client secret (pour Github et Gitlab)"
+        },
+        "optional": true,
+        "default": ""
+      },
+      {
+        "name": "admin",
+        "type": "user",
+        "ask": {
+          "en": "Choose the Gogs administrator (must be an existing YunoHost user)",
+          "fr": "Choisissez l'administrateur de Gogs (doit être un utilisateur YunoHost existant)"
+        },
+        "example": "johndoe"
+      },
+      {
+        "name": "is_public",
+        "type": "boolean",
+        "ask": {
+          "en": "Is it a public site ?",
+          "fr": "Est-ce un site public ?"
+        },
+        "default": true
+      }
+    ]
+  }
 }

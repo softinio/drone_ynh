@@ -1,18 +1,31 @@
-#!bin/bash
+#!/bin/bash
 
-set -eu
+#=================================================
+# GENERIC START
+#=================================================
 
+# IMPORT GENERIC HELPERS
 source /usr/share/yunohost/helpers
 
-# Set app specific variables
-app=${APPNAME:-drone}
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+# Load common variables and helpers
+source ../settings/scripts/_common.sh
+
+# Retrieve app settings
 domain=$(ynh_app_setting_get "$app" domain)
 
+#=================================================
+# STANDARD BACKUP STEPS
+#=================================================
+
 # Copy the data files
-DATADIR="/opt/$app"
-ynh_backup "$DATADIR" "data"
+ynh_backup "$final_path"
 
 # Copy the conf files
-mkdir ./conf
-ynh_backup "/etc/nginx/conf.d/${domain}.d/${app}.conf" "conf/nginx.conf"
-ynh_backup "/etc/systemd/system/${app}.service" "conf/${app}.service"
+ynh_backup "/etc/nginx/conf.d/${domain}.d/${app}.conf"
+ynh_backup "/etc/systemd/system/${app}.service"
+
+# Dump the database
+ynh_mysql_dump_db "$dbname" > ./db.sql

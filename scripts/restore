@@ -1,25 +1,33 @@
 #!/bin/bash
 
-set -eu
+#=================================================
+# GENERIC START
+#=================================================
 
+# IMPORT GENERIC HELPERS
 source /usr/share/yunohost/helpers
 
-# Set app specific variables
-app=${APPNAME:-drone}
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
 
-# Retrieve old app settings
+# Load common variables and helpers
+source ../settings/scripts/_common.sh
+
 domain=$(ynh_app_setting_get "$app" domain)
+admin=$(ynh_app_setting_get "$app" adminusername)
+dbpass=$(ynh_app_setting_get "$app" mysqlpwd)
+port=$(ynh_app_setting_get "$app" web_port)
+is_public=$(ynh_app_setting_get "$app" is_public)
 
-sudo yunohost app checkurl "${domain}" \
-    || ynh_die "The path ${domain} is not available for app installation."
+# Check domain/path availability with app helper
+ynh_webpath_available $domain $path_url || ynh_die "$domain is not available as domain, please use an other domain."
 
-# Check port availability
-sudo yunohost app checkport 8112 || ynh_die "Port 8112 already used, aborting."
+# Check user parameter
+ynh_user_exists "$admin" \
+  || ynh_die "The chosen admin user does not exist."
 
-# Check data directory
-[ -d $DATADIR ] && ynh_die \
-"The data directory '$DATADIR' already exists.\
- You should safely delete it before installing this app."
+# Check Final Path availability
+[ ! -e "$final_path" ] || ynh_die "This path already contains a folder"
 
 # Check configuration files
 nginx_conf="/etc/nginx/conf.d/${domain}.d/${app}.conf"
@@ -27,12 +35,27 @@ nginx_conf="/etc/nginx/conf.d/${domain}.d/${app}.conf"
 "The NGINX configuration already exists at '${nginx_conf}'.
 You should safely delete it before restoring this app."
 
-# Restore the data
-sudo cp -a ./data/. "$DATADIR/data"
+#=================================================
+# STANDARD RESTORATION STEPS
+#=================================================
 
-# Restore configuration files
-sudo cp -a ./conf/nginx.conf "$nginx_conf"
-sudo cp -a ./conf/"$app".service /etc/systemd/system/"$app".service
+# Restore all files
+ynh_restore
+
+# Create and restore the database
+ynh_mysql_create_db "$dbname" "$dbuser" "$dbpass"
+ynh_mysql_connect_as "$dbuser" "$dbpass" "$dbname" < ./db.sql
+
+# Restore systemd files
+systemctl daemon-reload
+systemctl enable "$app".service
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+
+# Unprotect root from SSO if public
+set_access_settings
 
 sudo yunohost service add "$app"
 

@@ -5,7 +5,7 @@
 #=================================================
 
 app=$YNH_APP_INSTANCE_NAME
-version="1.0.0"
+version="1.1.0"
 dbname=$app
 dbuser=$app
 final_path="/opt/$app"

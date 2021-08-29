@@ -5,7 +5,7 @@
 #=================================================
 
 app=$YNH_APP_INSTANCE_NAME
-app_runner="${YNH_APP_INSTANCE_NAME}_${app}"
+app_runner="${YNH_APP_INSTANCE_NAME}_runner"
 version="2.1.0"
 runner_version="latest"
 dbname=$app
@@ -65,7 +65,7 @@ DRONE_GITEA_SERVER=$remote_gitea
 DRONE_GITEA_CLIENT_ID=$client_id
 DRONE_GITEA_CLIENT_SECRET=$client_secret
 DRONE_RPC_SECRET=$rpc_secret
-DRONE_RUNNER_CAPACITY=2 
+DRONE_RUNNER_CAPACITY=2
 DRONE_RUNNER_NAME=$domain
 DRONE_RPC_PROTO=https
 EOF

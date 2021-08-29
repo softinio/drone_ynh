@@ -5,6 +5,7 @@
 #=================================================
 
 app=$YNH_APP_INSTANCE_NAME
+app_runner="$YNH_APP_INSTANCE_NAME_$app"
 version="2.1.0"
 dbname=$app
 dbuser=$app
@@ -31,8 +32,10 @@ fi
 # Check architecture & set Drone image
 if [ $ARCHITECTURE = "amd64" ]; then
     DRONE_IMAGE=drone/drone:$version
+    DRONE_RUNNER_IMAGE=drone/drone-runner-docker:$version
 elif [ $ARCHITECTURE = "arm" ]; then
     DRONE_IMAGE=armhfbuild/drone:$version
+    DRONE_RUNNER_IMAGE=armhfbuild/drone-runner-docker:$version
 else
     ynh_die "Unsupported architecture, aborting."
 fi
@@ -61,6 +64,9 @@ DRONE_GITEA_SERVER=$remote_gitea
 DRONE_GITEA_CLIENT_ID=$client_id
 DRONE_GITEA_CLIENT_SECRET=$client_secret
 DRONE_RPC_SECRET=$rpc_secret
+DRONE_RUNNER_CAPACITY=2 
+DRONE_RUNNER_NAME=$domain
+DRONE_RPC_PROTO=https
 EOF
 
 }
@@ -69,17 +75,26 @@ create_container() {
     systemctl restart docker
 
     # Install Drone
-     docker pull $DRONE_IMAGE
-     docker run \
-            --volume=/var/run/mysqld/mysqld.sock:/host_mysql.sock \
-            --volume=/var/run/docker.sock:/var/run/docker.sock \
-            --volume=/var/lib/drone:/opt/drone/data \
-            --env-file "$final_path/dronerc" \
-            --restart=always \
-            --publish=$port:80 \
-            --detach=true \
-            --name=$app \
-            $DRONE_IMAGE
+    docker pull $DRONE_IMAGE
+    docker run \
+        --volume=/var/run/mysqld/mysqld.sock:/host_mysql.sock \
+        --volume=/var/run/docker.sock:/var/run/docker.sock \
+        --volume=/var/lib/drone:/opt/drone/data \
+        --env-file "$final_path/dronerc" \
+        --restart=always \
+        --publish=$port:80 \
+        --detach=true \
+        --name=$app \
+        $DRONE_IMAGE
+
+    docker run -d \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        --env-file "$final_path/dronerc" \
+        -p 3000:3000 \
+        --restart always \
+        --name $app_runner \
+        $DRONE_RUNNER_IMAGE
+
 
 }
 

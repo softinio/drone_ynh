@@ -7,6 +7,7 @@
 app=$YNH_APP_INSTANCE_NAME
 app_runner="${YNH_APP_INSTANCE_NAME}_${app}"
 version="2.1.0"
+runner_version="latest"
 dbname=$app
 dbuser=$app
 final_path="/opt/$app"
@@ -32,10 +33,10 @@ fi
 # Check architecture & set Drone image
 if [ $ARCHITECTURE = "amd64" ]; then
     DRONE_IMAGE=drone/drone:$version
-    DRONE_RUNNER_IMAGE=drone/drone-runner-docker:$version
+    DRONE_RUNNER_IMAGE=drone/drone-runner-docker:$runner_version
 elif [ $ARCHITECTURE = "arm" ]; then
     DRONE_IMAGE=armhfbuild/drone:$version
-    DRONE_RUNNER_IMAGE=armhfbuild/drone-runner-docker:$version
+    DRONE_RUNNER_IMAGE=armhfbuild/drone-runner-docker:$runner_version
 else
     ynh_die "Unsupported architecture, aborting."
 fi

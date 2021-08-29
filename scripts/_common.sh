@@ -87,6 +87,7 @@ create_container() {
         --name=$app \
         $DRONE_IMAGE
 
+    docker pull $DRONE_RUNNER_IMAGE
     docker run -d \
         -v /var/run/docker.sock:/var/run/docker.sock \
         --env-file "$final_path/dronerc" \

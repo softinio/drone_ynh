@@ -5,7 +5,7 @@
 #=================================================
 
 app=$YNH_APP_INSTANCE_NAME
-app_runner="${YNH_APP_INSTANCE_NAME}runner"
+app_runner="runner"
 version="2.1.0"
 runner_version="latest"
 dbname=$app
@@ -94,10 +94,9 @@ create_container() {
         --env-file "$final_path/dronerc" \
         -p 3000:3000 \
         --restart always \
+        --detach=true \
         --name $app_runner \
         $DRONE_RUNNER_IMAGE
-
-
 }
 
 config_nginx() {

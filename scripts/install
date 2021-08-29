@@ -15,30 +15,17 @@ source ./_common.sh
 
 # Retrieve arguments
 domain=$YNH_APP_ARG_DOMAIN
-remote_gogs=$YNH_APP_ARG_REMOTE_GOGS
 remote_gitea=$YNH_APP_ARG_REMOTE_GITEA
-remote_github=$YNH_APP_ARG_REMOTE_GITHUB
-remote_gitlab=$YNH_APP_ARG_REMOTE_GITLAB
 client_id=$YNH_APP_ARG_CLIENT_ID
 client_secret=$YNH_APP_ARG_CLIENT_SECRET
 path_url="/"
 admin=$YNH_APP_ARG_ADMIN
 is_public=$YNH_APP_ARG_IS_PUBLIC
+rpc_secret=$YNH_APP_ARG_RPC_SECRET
 
 # Check parameters
 ynh_webpath_available $domain $path_url || ynh_die "The path ${domain} is not available for app installation."
 ynh_webpath_register "$app" "${domain}" "$path_url"
-
-remote=0
-[[ ! -z $remote_gitea  ]] && remote=$((remote + 1))
-[[ ! -z $remote_gogs ]] && remote=$((remote + 1))
-[[ ! -z $remote_github ]] && remote=$((remote + 1))
-[[ ! -z $remote_gitlab ]] && remote=$((remote + 1))
-[[ $remote != 1 ]] && ynh_die "You can give only one remote driver. You can install multiple instance."
-
-if [[ ! -z $remote_gitlab || ! -z $remote_github ]]; then
-    [[ -z $client_id || -z $client_secret ]] && ynh_die "For Gitlab or Github you need client id and client secret."
-fi
 
 # Check user parameter
 ynh_user_exists "$admin" \

@@ -52,32 +52,16 @@ create_drone_env() {
 DRONE_GIT_ALWAYS_AUTH=false
 DRONE_RUNNER_CAPACITY=2
 DRONE_SERVER_HOST=$domain
-DRONE_SERVER_PROTO=http
+DRONE_SERVER_PROTO=https
 DRONE_TLS_AUTOCERT=false
 DRONE_DATABASE_DRIVER=mysql
 DRONE_DATABASE_DATASOURCE=$dbuser:$dbpass@unix(/host_mysql.sock)/$dbname?parseTime=true
 DRONE_USER_CREATE=username:$admin,admin:true
+DRONE_GITEA_SERVER=$remote_gitea
+DRONE_GITEA_CLIENT_ID=$client_id
+DRONE_GITEA_CLIENT_SECRET=$client_secret
+DRONE_RPC_SECRET=$rpc_secret
 EOF
-
-    [ -z "$remote_gogs" ] || echo "DRONE_GOGS_SERVER=$remote_gogs" | tee -a "$final_path/dronerc"
-
-    [ -z "$remote_gitea" ] || echo "DRONE_GITEA_SERVER=$remote_gitea" | tee -a "$final_path/dronerc"
-
-    if [[ ! -z "$remote_github" ]]; then
-        cat << EOF | tee -a "$final_path"/dronerc
-DRONE_GITHUB_SERVER=$remote_github
-DRONE_GITHUB_CLIENT_ID=$client_id
-DRONE_GITHUB_CLIENT_SECRET=$client_secret
-EOF
-    fi
-
-    if [[ ! -z "$remote_gitlab" ]]; then
-        cat << EOF | tee -a "$final_path"/dronerc
-DRONE_GITLAB_SERVER=$remote_gitlab
-DRONE_GITLAB_CLIENT_ID=$client_id
-DRONE_GITLAB_CLIENT_SECRET=$client_secret
-EOF
-    fi
 
 }
 

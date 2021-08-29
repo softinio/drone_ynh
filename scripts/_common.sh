@@ -5,7 +5,7 @@
 #=================================================
 
 app=$YNH_APP_INSTANCE_NAME
-app_runner="$YNH_APP_INSTANCE_NAME_$app"
+app_runner="${YNH_APP_INSTANCE_NAME}_${app}"
 version="2.1.0"
 dbname=$app
 dbuser=$app
